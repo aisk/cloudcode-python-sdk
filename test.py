@@ -4,7 +4,8 @@ import requests
 from wsgi_intercept import requests_intercept, add_wsgi_intercept
 
 
-from middleware import CloudCodeMiddleware
+from middleware import wrap
+
 
 def app(environ, start_response):
     start_response('200 OK', [('Content-Type', 'text/plain')])
@@ -12,7 +13,7 @@ def app(environ, start_response):
 
 
 def make_app():
-    return CloudCodeMiddleware(app)
+    return wrap(app)
 
 
 host, port = 'localhost', 80
