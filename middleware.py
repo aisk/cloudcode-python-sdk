@@ -58,8 +58,6 @@ class CloudCodeMiddleware(object):
 
     def __call__(self, environ, start_response):
         request = Request(environ)
-        print request
-        print request.path
         return self.app(environ, start_response)
 
     def dispatch_request(self, request):
