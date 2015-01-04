@@ -10,6 +10,10 @@ from werkzeug.exceptions import HTTPException
 
 __author__ = 'asaka <lan@leancloud.rocks>'
 
+
+ENABLE_TEST = False  # when set to True, every request's environ will stored in `current_environ`, just for test
+current_environ = None
+
 APP_ID = os.environ.get('APP_ID')
 APP_KEY = os.environ.get('APP_KEY')
 MASTER_KEY = os.environ.get('MASTER_KEY')
@@ -24,7 +28,11 @@ class AuthInfoMiddleware(object):
         self.app = app
 
     def __call__(self, environ, start_response):
+        if ENABLE_TEST:
+            global current_environ
+            current_environ = environ
         self.parse_header(environ)
+
         return self.app(environ, start_response)
 
     def parse_header(self, environ):
@@ -59,8 +67,9 @@ class AuthorizationMiddleware(object):
         app_params = environ['_app_params']
         if app_params['id'] is None:
             return unauth_response(environ, start_response)
-        if (APP_ID == app_params['id']) and (app_params['key'] in [APP_ID, APP_KEY]):
+        if (APP_ID == app_params['id']) and (app_params['key'] in [MASTER_KEY, APP_KEY]):
             return self.app(environ, start_response)
+
         return unauth_response(environ, start_response)
 
 
@@ -69,10 +78,13 @@ class CloudCodeMiddleware(object):
         self.app = app
         self.url_map = Map([
             Rule('/'),
+            Rule('/functions/<func_name>'),
+            Rule('/<class_name>/<hook_name>'),
         ])
 
     def __call__(self, environ, start_response):
         request = Request(environ)
+
         return self.app(environ, start_response)
 
     def dispatch_request(self, request):
@@ -83,7 +95,7 @@ class CloudCodeMiddleware(object):
 
 def wrap(app):
     return AuthInfoMiddleware(
-        AuthInfoMiddleware(
+        AuthorizationMiddleware(
             CloudCodeMiddleware(
                 app
             )
