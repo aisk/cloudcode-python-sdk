@@ -6,6 +6,8 @@ import hashlib
 from werkzeug.wrappers import Request, Response
 from werkzeug.routing import Map, Rule
 from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import NotAcceptable
 
 
 __author__ = 'asaka <lan@leancloud.rocks>'
@@ -77,20 +79,32 @@ class CloudCodeMiddleware(object):
     def __init__(self, app):
         self.app = app
         self.url_map = Map([
-            Rule('/'),
-            Rule('/functions/<func_name>'),
-            Rule('/<class_name>/<hook_name>'),
+            Rule('/1/', endpoint='index'),
+            Rule('/1.1/', endpoint='index'),
+            Rule('/1/functions/<func_name>', endpoint='cloud_function'),
+            Rule('/1.1/functions/<func_name>', endpoint='cloud_function'),
+            Rule('/1/<class_name>/<hook_name>', endpoint='cloud_hook'),
+            Rule('/1.1/<class_name>/<hook_name>', endpoint='cloud_hook'),
         ])
 
     def __call__(self, environ, start_response):
         request = Request(environ)
+
+        try:
+            self.dispatch_request(request)
+        except HTTPException, e:
+            return e(environ, start_response)
 
         return self.app(environ, start_response)
 
     def dispatch_request(self, request):
         adapter = self.url_map.bind_to_environ(request.environ)
         endpoint, values = adapter.match()
-        print endpoint, values
+        # print endpoint, values
+        if endpoint == 'cloud_function':
+            dispatch_cloud_func(values['func_name'])
+        if endpoint == 'cloud_func':
+            dispatch_cloud_hook(values['hook_name'])
 
 
 def wrap(app):
@@ -101,3 +115,41 @@ def wrap(app):
             )
         )
     )
+
+
+_cloud_func_map = {}
+
+
+def register_cloud_func(func):
+    func_name = func.__name__
+    if func_name in _cloud_func_map:
+        raise RuntimeError('cloud function: {} is already registered')
+    _cloud_func_map[func_name] = func
+
+
+def dispatch_cloud_func(func_name):
+    if func_name not in _cloud_func_map:
+        raise NotFound('xxx')
+
+    print "{} is called!".format(func_name)  # TODO
+
+
+_cloud_hook_map = {
+    'beforeSave': {},
+    'afterSave': {},
+    'afterUpdate': {},
+    'beforeDelete': {},
+    'afterDelete': {},
+}
+
+
+def _register_cloud_hook(hook_name, func):
+    if hook_name not in _cloud_hook_map:
+        raise RuntimeError('invalid hook name')
+
+
+def dispatch_cloud_hook(hook_name):
+    if hook_name not in _cloud_hook_map:
+        raise NotAcceptable
+
+    print "{} is called!".format(hook_name)  # TODO

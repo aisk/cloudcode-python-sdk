@@ -84,7 +84,7 @@ def test_app_paramas_4():
 
 
 def test_authorization_1():
-    response = requests.get(url, headers={
+    response = requests.get(url + '1.1/', headers={
         'x-avoscloud-application-id': TEST_APP_ID,
         'x-avoscloud-application-key': TEST_APP_KEY,
     })
@@ -92,7 +92,7 @@ def test_authorization_1():
 
 
 def test_authorization_2():
-    response = requests.get(url, headers={
+    response = requests.get(url + '1.1/', headers={
         'x-avoscloud-application-id': TEST_APP_ID,
         'x-avoscloud-application-key': TEST_MASTER_KEY,
     })
@@ -100,7 +100,7 @@ def test_authorization_2():
 
 
 def test_authorization_3():
-    response = requests.get(url, headers={
+    response = requests.get(url + '1.1/', headers={
         'x-avoscloud-application-id': 'foo',
         'x-avoscloud-application-key': 'bar',
     })
