@@ -49,6 +49,17 @@ class AuthInfoMiddleware(object):
         }
 
 
+class AuthorizationMiddleware(object):
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        unauth_response = Response('Unauthorized.', status=401, mimetype='application/json')
+        app_params = environ['_app_params']
+        if app_params['id'] is None:
+            return unauth_response(environ, start_response)
+
+
 class CloudCodeMiddleware(object):
     def __init__(self, app):
         self.app = app
@@ -67,4 +78,10 @@ class CloudCodeMiddleware(object):
 
 
 def wrap(app):
-    return AuthInfoMiddleware(CloudCodeMiddleware(app))
+    return AuthInfoMiddleware(
+        AuthInfoMiddleware(
+            CloudCodeMiddleware(
+                app
+            )
+        )
+    )

@@ -69,14 +69,14 @@ def test_app_params_2():
 
 
 def test_app_params_3():
-    resp = requests.get(url, headers={
+    requests.get(url, headers={
         'x-avoscloud-request-sign': '28ad0513f8788d58bb0f7caa0af23400,1389085779854'
     })
     assert env['_app_params']['key'] == 'n35a5fdhawz56y24pjn3u9d5zp9r1nhpebrxyyu359cq0ddo'
 
 
 def test_app_paramas_4():
-    resp = requests.get(url, headers={
+    requests.get(url, headers={
         'x-avoscloud-request-sign': 'c884fe684c17c972eb4e33bc8b29cb5b,1389085779854,master'
     })
     assert env['_app_params']['key'] == 'h2ln3ffyfzysxmkl4p3ja7ih0y6sq5knsa2j0qnm1blk2rn2'
