@@ -39,6 +39,7 @@ class AuthInfoMiddleware(object):
                 sign = request_sign[0].lower()
                 timestamp = request_sign[1]
                 key = MASTER_KEY if len(request_sign) == 3 and request_sign[2] == 'master' else APP_KEY
+                # TODO: check timestamp
                 if sign == sign_by_key(timestamp, key):
                     app_key = key
 
@@ -58,6 +59,9 @@ class AuthorizationMiddleware(object):
         app_params = environ['_app_params']
         if app_params['id'] is None:
             return unauth_response(environ, start_response)
+        if (APP_ID == app_params['id']) and (app_params['key'] in [APP_ID, APP_KEY]):
+            return self.app(environ, start_response)
+        return unauth_response(environ, start_response)
 
 
 class CloudCodeMiddleware(object):
