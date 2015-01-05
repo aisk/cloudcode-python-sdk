@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os
+import json
 import hashlib
 
 from werkzeug.wrappers import Request, Response
@@ -78,6 +79,7 @@ class AuthorizationMiddleware(object):
 class CloudCodeMiddleware(object):
     def __init__(self, app):
         self.app = app
+
         self.url_map = Map([
             Rule('/1/', endpoint='index'),
             Rule('/1.1/', endpoint='index'),
@@ -100,11 +102,13 @@ class CloudCodeMiddleware(object):
     def dispatch_request(self, request):
         adapter = self.url_map.bind_to_environ(request.environ)
         endpoint, values = adapter.match()
-        # print endpoint, values
+        assert isinstance(request, Request)
+        params = request.get_data()
+        values['params'] = json.loads(params) if params != '' else None
         if endpoint == 'cloud_function':
-            dispatch_cloud_func(values['func_name'])
+            dispatch_cloud_func(**values)
         if endpoint == 'cloud_func':
-            dispatch_cloud_hook(values['hook_name'])
+            dispatch_cloud_hook(**values)
 
 
 def wrap(app):
@@ -123,15 +127,18 @@ _cloud_func_map = {}
 def register_cloud_func(func):
     func_name = func.__name__
     if func_name in _cloud_func_map:
-        raise RuntimeError('cloud function: {} is already registered')
+        raise RuntimeError('cloud function: {} is already registered'.format(func_name))
     _cloud_func_map[func_name] = func
 
 
-def dispatch_cloud_func(func_name):
-    if func_name not in _cloud_func_map:
+def dispatch_cloud_func(func_name, params):
+    func = _cloud_func_map.get(func_name)
+    if not func:
         raise NotFound('xxx')
 
     print "{} is called!".format(func_name)  # TODO
+
+    func(params)
 
 
 _cloud_hook_map = {
@@ -143,13 +150,22 @@ _cloud_hook_map = {
 }
 
 
-def _register_cloud_hook(hook_name, func):
+def _register_cloud_hook(class_name, hook_name, func):
     if hook_name not in _cloud_hook_map:
         raise RuntimeError('invalid hook name')
 
+    if class_name in _cloud_hook_map[hook_name]:
+        raise RuntimeError('cloud hook {} on class {} is already registered'.format(hook_name, class_name))
 
-def dispatch_cloud_hook(hook_name):
+    _cloud_hook_map[hook_name][class_name] = func
+
+
+def dispatch_cloud_hook(class_name, hook_name, params):
     if hook_name not in _cloud_hook_map:
         raise NotAcceptable
 
-    print "{} is called!".format(hook_name)  # TODO
+    print "{}:{} is called!".format(class_name, hook_name)  # TODO
+
+    func = _cloud_hook_map[hook_name].get(class_name)
+    if not func:
+        raise NotFound

@@ -16,6 +16,10 @@ TEST_APP_ID = 'mdx1l0uh1p08tdpsk8ffn4uxjh2bbhl86rebrk3muph08qx7'
 TEST_APP_KEY = 'n35a5fdhawz56y24pjn3u9d5zp9r1nhpebrxyyu359cq0ddo'
 TEST_MASTER_KEY = 'h2ln3ffyfzysxmkl4p3ja7ih0y6sq5knsa2j0qnm1blk2rn2'
 
+NORMAL_HEADERS = {
+    'x-avoscloud-application-id': TEST_APP_ID,
+    'x-avoscloud-application-key': TEST_APP_KEY,
+}
 
 def app(environ, start_response):
     start_response('200 OK', [('Content-Type', 'text/plain')])
@@ -105,3 +109,15 @@ def test_authorization_3():
         'x-avoscloud-application-key': 'bar',
     })
     assert response.status_code == 401
+
+
+def test_register_cloud_func():
+    @middleware.register_cloud_func
+    def ping(params):
+        assert params == {"foo": ["bar", "baz"]}
+        return 'pong'
+
+    requests.post(url + '/1.1/functions/ping', headers={
+        'x-avoscloud-application-id': TEST_APP_ID,
+        'x-avoscloud-application-key': TEST_APP_KEY,
+    }, json={'foo': ['bar', 'baz']})
