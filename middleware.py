@@ -14,7 +14,7 @@ from werkzeug.exceptions import NotAcceptable
 __author__ = 'asaka <lan@leancloud.rocks>'
 
 
-ENABLE_TEST = False  # when set to True, every request's environ will stored in `current_environ`, just for test
+_ENABLE_TEST = False  # when set to True, every request's environ will stored in `current_environ`, just for test
 current_environ = None
 
 APP_ID = os.environ.get('APP_ID')
@@ -31,7 +31,7 @@ class AuthInfoMiddleware(object):
         self.app = app
 
     def __call__(self, environ, start_response):
-        if ENABLE_TEST:
+        if _ENABLE_TEST:
             global current_environ
             current_environ = environ
         self.parse_header(environ)
@@ -81,8 +81,8 @@ class CloudCodeMiddleware(object):
         self.app = app
 
         self.url_map = Map([
-            Rule('/1/', endpoint='index'),
-            Rule('/1.1/', endpoint='index'),
+            # Rule('/1/', endpoint='index'),
+            # Rule('/1.1/', endpoint='index'),
             Rule('/1/functions/<func_name>', endpoint='cloud_function'),
             Rule('/1.1/functions/<func_name>', endpoint='cloud_function'),
             Rule('/1/<class_name>/<hook_name>', endpoint='cloud_hook'),
@@ -92,24 +92,30 @@ class CloudCodeMiddleware(object):
     def __call__(self, environ, start_response):
         request = Request(environ)
 
-        try:
-            response = self.dispatch_request(request)
-        except HTTPException, e:
-            return e(environ, start_response)
+        response = self.dispatch_request(request)
 
         return response(environ, start_response)
-        # return self.app(environ, start_response)
 
     def dispatch_request(self, request):
         adapter = self.url_map.bind_to_environ(request.environ)
-        endpoint, values = adapter.match()
-        assert isinstance(request, Request)
+        try:
+            endpoint, values = adapter.match()
+        except NotFound:
+            # go through the origin response
+            return self.app
+        except HTTPException, e:
+            return e
+
         params = request.get_data()
         values['params'] = json.loads(params) if params != '' else None
-        if endpoint == 'cloud_function':
-            return dispatch_cloud_func(**values)
-        if endpoint == 'cloud_func':
-            return dispatch_cloud_hook(**values)
+
+        try:
+            if endpoint == 'cloud_function':
+                return dispatch_cloud_func(**values)
+            if endpoint == 'cloud_func':
+                return dispatch_cloud_hook(**values)
+        except Exception:
+            return Response('internal error', status=500)
 
 
 def wrap(app):
@@ -177,3 +183,12 @@ def dispatch_cloud_hook(class_name, hook_name, params):
     func = _cloud_hook_map[hook_name].get(class_name)
     if not func:
         raise NotFound
+
+    result = func(params)
+    if isinstance(result, basestring):
+        return Response(result, mimetype='text/plain')
+    if isinstance(result, dict):
+        return Response(json.dumps(result), mimetype='application/json')
+    if isinstance(result, Response):
+        return result
+    raise TypeError('invalid cloud hook result')

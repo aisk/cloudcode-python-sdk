@@ -36,7 +36,7 @@ url = 'http://{0}:{1}/'.format(host, port)
 
 
 def setup():
-    middleware.ENABLE_TEST = True
+    middleware._ENABLE_TEST = True
     middleware.APP_ID = TEST_APP_ID
     middleware.APP_KEY = TEST_APP_KEY
     middleware.MASTER_KEY = TEST_MASTER_KEY
