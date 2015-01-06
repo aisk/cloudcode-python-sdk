@@ -21,6 +21,7 @@ NORMAL_HEADERS = {
     'x-avoscloud-application-key': TEST_APP_KEY,
 }
 
+
 def app(environ, start_response):
     start_response('200 OK', [('Content-Type', 'text/plain')])
     return ['Hello LeanCloud']
@@ -117,7 +118,9 @@ def test_register_cloud_func():
         assert params == {"foo": ["bar", "baz"]}
         return 'pong'
 
-    requests.post(url + '/1.1/functions/ping', headers={
+    response = requests.post(url + '/1.1/functions/ping', headers={
         'x-avoscloud-application-id': TEST_APP_ID,
         'x-avoscloud-application-key': TEST_APP_KEY,
     }, json={'foo': ['bar', 'baz']})
+    assert response.ok
+    assert response.content == 'pong'
