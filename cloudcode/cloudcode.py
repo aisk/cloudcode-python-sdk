@@ -1,8 +1,10 @@
 # coding: utf-8
 
 import json
+import time
 import logging
 
+import leancloud
 from werkzeug.wrappers import Request
 from werkzeug.wrappers import Response
 from werkzeug.routing import Map
@@ -11,12 +13,14 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import NotFound
 from werkzeug.exceptions import NotAcceptable
 
-import leancloud
+from . import context
 
 
 __author__ = 'asaka <lan@leancloud.rocks>'
 
-logger = logging.getLogger('leancloud.cloudcode.middleware')
+logger = logging.getLogger('leancloud.cloudcode.cloudcode')
+
+user = context.local('user')
 
 
 class CloudCodeApplication(object):
@@ -31,6 +35,7 @@ class CloudCodeApplication(object):
         ])
 
     def __call__(self, environ, start_response):
+        context.local.user = 'user for {}'.format(time.time())
         request = Request(environ)
 
         response = self.dispatch_request(request)

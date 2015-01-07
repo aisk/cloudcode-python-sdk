@@ -71,9 +71,12 @@ class _AuthorizationMiddleware(object):
         return unauth_response(environ, start_response)
 
 
-class AuthorizationMiddleware(object):
-    def __init__(self, app):
-        self.app = _AuthInfoMiddleware(_AuthorizationMiddleware(app))
+# class AuthorizationMiddleware(object):
+#     def __init__(self, app):
+#         self.app = _AuthInfoMiddleware(_AuthorizationMiddleware(app))
+#
+#     def __call__(self, environ, start_response):
+#         return self.app(environ, start_response)
 
-    def __call__(self, environ, start_response):
-        return self.app(environ, start_response)
+
+AuthorizationMiddleware = lambda app: _AuthInfoMiddleware(_AuthorizationMiddleware(app))

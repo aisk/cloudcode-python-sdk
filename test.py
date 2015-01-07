@@ -1,12 +1,15 @@
 # coding: utf-8
 
+import time
+
 import requests
 from wsgi_intercept import requests_intercept, add_wsgi_intercept
 
 
-import middleware
-from middleware import authorization
-from middleware import wrap
+import cloudcode
+from cloudcode import user
+from cloudcode import authorization
+from cloudcode import wrap
 
 
 __author__ = 'asaka <lan@leancloud.rocks>'
@@ -45,7 +48,7 @@ def setup():
     requests_intercept.install()
     add_wsgi_intercept(host, port, make_app)
 
-    @middleware.register_cloud_func
+    @cloudcode.register_cloud_func
     def hello(params):
         return 'hello'
 
@@ -120,7 +123,7 @@ def test_authorization_3():
 
 
 def test_register_cloud_func():
-    @middleware.register_cloud_func
+    @cloudcode.register_cloud_func
     def ping(params):
         assert params == {"foo": ["bar", "baz"]}
         return 'pong'

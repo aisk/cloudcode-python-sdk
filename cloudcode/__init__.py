@@ -2,18 +2,18 @@
 
 from werkzeug.wrappers import Request
 
-
-__author__ = 'asaka <lan@leancloud.rocks>'
-
-
+import context
 from .authorization import AuthorizationMiddleware
 from .cloudcode import CloudCodeApplication
 from .cloudcode import register_cloud_func
 from .cloudcode import register_cloud_hook
+from .cloudcode import user
+
+__author__ = 'asaka <lan@leancloud.rocks>'
 
 
 def wrap(app):
-    cloud_app = AuthorizationMiddleware(CloudCodeApplication())
+    cloud_app = context.local_manager.make_middleware(AuthorizationMiddleware(CloudCodeApplication()))
 
     def fn(environ, start_response):
         request = Request(environ)
@@ -26,6 +26,8 @@ def wrap(app):
 
 __all__ = [
     'wrap',
+    'user',
     'register_cloud_func',
     'register_cloud_hook',
+    'local',
 ]
