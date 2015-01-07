@@ -1,7 +1,6 @@
 # coding: utf-8
 
 import json
-import time
 import logging
 
 import leancloud
@@ -130,7 +129,7 @@ def dispatch_cloud_hook(class_name, hook_name, params):
     if not func:
         raise NotFound
 
-    result = func(params)
+    result = func(obj)
     if isinstance(result, basestring):
         return Response(result, mimetype='text/plain')
     if isinstance(result, dict):
