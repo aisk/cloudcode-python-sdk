@@ -3,6 +3,7 @@
 import os
 import json
 import hashlib
+import logging
 
 from werkzeug.wrappers import Request, Response
 from werkzeug.routing import Map, Rule
@@ -15,6 +16,8 @@ import leancloud
 
 __author__ = 'asaka <lan@leancloud.rocks>'
 
+
+logger = logging.getLogger('leancloud.cloudcode.middleware')
 
 _ENABLE_TEST = False  # when set to True, every request's environ will stored in `current_environ`, just for test
 current_environ = None
@@ -143,7 +146,7 @@ def dispatch_cloud_func(func_name, params):
     if not func:
         raise NotFound('xxx')
 
-    print "{} is called!".format(func_name)  # TODO
+    logger.info("{} is called!".format(func_name))
 
     result = func(params)
     if isinstance(result, basestring):
@@ -180,7 +183,7 @@ def dispatch_cloud_hook(class_name, hook_name, params):
 
     obj = leancloud.Object.create(class_name)
 
-    print "{}:{} is called!".format(class_name, hook_name)  # TODO
+    logger.info("{}:{} is called!".format(class_name, hook_name))
 
     func = _cloud_hook_map[hook_name].get(class_name)
     if not func:

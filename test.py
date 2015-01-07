@@ -113,7 +113,6 @@ def test_authorization_3():
         'x-avoscloud-application-id': 'foo',
         'x-avoscloud-application-key': 'bar',
     })
-    print response.content
     assert response.status_code == 401
 
 
