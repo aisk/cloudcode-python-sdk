@@ -44,24 +44,28 @@ def setup():
     requests_intercept.install()
     add_wsgi_intercept(host, port, make_app)
 
+    @middleware.register_cloud_func
+    def hello(params):
+        return 'hello'
+
 
 def teardown():
     requests_intercept.uninstall()
 
 
-# def test_origin_response():
-#     resp = requests.get(url)
-#     assert resp.ok
-#     assert resp.content == 'Hello LeanCloud'
+def test_origin_response():
+    resp = requests.get(url)
+    assert resp.ok
+    assert resp.content == 'Hello LeanCloud'
 
 
 def test_app_params_1():
-    requests.get(url)
+    requests.get(url + '/1/functions/hello')
     assert '_app_params' in middleware.current_environ
 
 
 def test_app_params_2():
-    resp = requests.get(url, headers={
+    resp = requests.get(url + '/1/functions/hello', headers={
         'x-avoscloud-application-id': 'foo',
         'x-avoscloud-application-key': 'bar',
         'x-avoscloud-session-token': 'baz',
@@ -73,7 +77,7 @@ def test_app_params_2():
 
 
 def test_app_params_3():
-    requests.get(url, headers={
+    requests.get(url + '/1/functions/hello', headers={
         'x-avoscloud-request-sign': '28ad0513f8788d58bb0f7caa0af23400,1389085779854'
     })
     env = middleware.current_environ
@@ -81,7 +85,7 @@ def test_app_params_3():
 
 
 def test_app_paramas_4():
-    requests.get(url, headers={
+    requests.get(url + '/1/functions/hello', headers={
         'x-avoscloud-request-sign': 'c884fe684c17c972eb4e33bc8b29cb5b,1389085779854,master'
     })
     env = middleware.current_environ
@@ -89,7 +93,7 @@ def test_app_paramas_4():
 
 
 def test_authorization_1():
-    response = requests.get(url + '1.1/', headers={
+    response = requests.get(url + '/1/functions/hello', headers={
         'x-avoscloud-application-id': TEST_APP_ID,
         'x-avoscloud-application-key': TEST_APP_KEY,
     })
@@ -97,7 +101,7 @@ def test_authorization_1():
 
 
 def test_authorization_2():
-    response = requests.get(url + '1.1/', headers={
+    response = requests.get(url + '/1/functions/hello', headers={
         'x-avoscloud-application-id': TEST_APP_ID,
         'x-avoscloud-application-key': TEST_MASTER_KEY,
     })
@@ -105,10 +109,11 @@ def test_authorization_2():
 
 
 def test_authorization_3():
-    response = requests.get(url + '1.1/', headers={
+    response = requests.get(url + '/1/functions/hello', headers={
         'x-avoscloud-application-id': 'foo',
         'x-avoscloud-application-key': 'bar',
     })
+    print response.content
     assert response.status_code == 401
 
 

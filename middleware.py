@@ -10,6 +10,8 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import NotFound
 from werkzeug.exceptions import NotAcceptable
 
+import leancloud
+
 
 __author__ = 'asaka <lan@leancloud.rocks>'
 
@@ -34,6 +36,7 @@ class AuthInfoMiddleware(object):
         if _ENABLE_TEST:
             global current_environ
             current_environ = environ
+
         self.parse_header(environ)
 
         return self.app(environ, start_response)
@@ -76,17 +79,15 @@ class AuthorizationMiddleware(object):
         return unauth_response(environ, start_response)
 
 
-class CloudCodeMiddleware(object):
-    def __init__(self, app):
-        self.app = app
-
+class CloudCodeApplication(object):
+    def __init__(self):
         self.url_map = Map([
             # Rule('/1/', endpoint='index'),
             # Rule('/1.1/', endpoint='index'),
             Rule('/1/functions/<func_name>', endpoint='cloud_function'),
             Rule('/1.1/functions/<func_name>', endpoint='cloud_function'),
-            Rule('/1/<class_name>/<hook_name>', endpoint='cloud_hook'),
-            Rule('/1.1/<class_name>/<hook_name>', endpoint='cloud_hook'),
+            Rule('/1/functions/<class_name>/<hook_name>', endpoint='cloud_hook'),
+            Rule('/1.1/functions/<class_name>/<hook_name>', endpoint='cloud_hook'),
         ])
 
     def __call__(self, environ, start_response):
@@ -100,9 +101,6 @@ class CloudCodeMiddleware(object):
         adapter = self.url_map.bind_to_environ(request.environ)
         try:
             endpoint, values = adapter.match()
-        except NotFound:
-            # go through the origin response
-            return self.app
         except HTTPException, e:
             return e
 
@@ -119,13 +117,15 @@ class CloudCodeMiddleware(object):
 
 
 def wrap(app):
-    return AuthInfoMiddleware(
-        AuthorizationMiddleware(
-            CloudCodeMiddleware(
-                app
-            )
-        )
-    )
+    cloud_app = AuthInfoMiddleware(AuthorizationMiddleware(CloudCodeApplication()))
+
+    def fn(environ, start_response):
+        request = Request(environ)
+        if request.path.startswith('/1/functions') or request.path.startswith('/1.1/functions'):
+            return cloud_app(environ, start_response)
+        return app(environ, start_response)
+
+    return fn
 
 
 _cloud_func_map = {}
@@ -177,6 +177,8 @@ def _register_cloud_hook(class_name, hook_name, func):
 def dispatch_cloud_hook(class_name, hook_name, params):
     if hook_name not in _cloud_hook_map:
         raise NotAcceptable
+
+    obj = leancloud.Object.create(class_name)
 
     print "{}:{} is called!".format(class_name, hook_name)  # TODO
 
