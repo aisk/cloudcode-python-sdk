@@ -1,7 +1,5 @@
 # coding: utf-8
 
-import time
-
 import requests
 from wsgi_intercept import requests_intercept, add_wsgi_intercept
 

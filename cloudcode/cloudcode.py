@@ -35,12 +35,23 @@ class CloudCodeApplication(object):
         ])
 
     def __call__(self, environ, start_response):
-        context.local.user = 'user for {}'.format(time.time())
+        self.process_session(environ)
         request = Request(environ)
 
         response = self.dispatch_request(request)
 
         return response(environ, start_response)
+
+    @classmethod
+    def process_session(cls, environ):
+        if environ['_app_params']['session_token'] in (None, ''):
+            context.local.user = None
+            return
+
+        session_token = environ['_app_params']['session_token']
+        user = leancloud.Object.create('_User', session_token=session_token)
+        # TODO: fetch user
+        context.local.user = user
 
     def dispatch_request(self, request):
         adapter = self.url_map.bind_to_environ(request.environ)
