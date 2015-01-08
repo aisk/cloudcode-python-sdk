@@ -2,7 +2,7 @@
 
 ```sh
 export APP_ID=foo
-export export APP_KEY=bar
+export APP_KEY=bar
 
 python flask_example.py
 ```
