@@ -2,6 +2,7 @@
 
 import json
 import logging
+import traceback
 
 import leancloud
 from werkzeug.wrappers import Request
@@ -64,10 +65,12 @@ class CloudCodeApplication(object):
 
         try:
             if endpoint == 'cloud_function':
-                return dispatch_cloud_func(**values)
+                result = dispatch_cloud_func(**values)
             if endpoint == 'cloud_func':
-                return dispatch_cloud_hook(**values)
+                result = dispatch_cloud_hook(**values)
+            return Response(json.dumps({'result': result}), mimetype='application/json')
         except Exception:
+            traceback.print_exc()
             return Response('internal error', status=500)
 
 
@@ -84,18 +87,18 @@ def register_cloud_func(func):
 def dispatch_cloud_func(func_name, params):
     func = _cloud_func_map.get(func_name)
     if not func:
-        raise NotFound('xxx')
+        raise NotFound('xxx')  # TODO
 
     logger.info("{} is called!".format(func_name))
 
-    result = func(params)
-    if isinstance(result, basestring):
-        return Response(result, mimetype='text/plain')
-    if isinstance(result, dict):
-        return Response(json.dumps(result), mimetype='application/json')
-    if isinstance(result, Response):
-        return result
-    raise TypeError('invalid cloud function result')
+    return func(params)
+    # if isinstance(result, basestring):
+    #     return Response(result, mimetype='text/plain')
+    # if isinstance(result, dict):
+    #     return Response(json.dumps(result), mimetype='application/json')
+    # if isinstance(result, Response):
+    #     return result
+    # raise TypeError('invalid cloud function result')
 
 
 _cloud_hook_map = {
@@ -129,11 +132,11 @@ def dispatch_cloud_hook(class_name, hook_name, params):
     if not func:
         raise NotFound
 
-    result = func(obj)
-    if isinstance(result, basestring):
-        return Response(result, mimetype='text/plain')
-    if isinstance(result, dict):
-        return Response(json.dumps(result), mimetype='application/json')
-    if isinstance(result, Response):
-        return result
-    raise TypeError('invalid cloud hook result')
+    return func(obj)
+    # if isinstance(result, basestring):
+    #     return Response(result, mimetype='text/plain')
+    # if isinstance(result, dict):
+    #     return Response(json.dumps(result), mimetype='application/json')
+    # if isinstance(result, Response):
+    #     return result
+    # raise TypeError('invalid cloud hook result')
