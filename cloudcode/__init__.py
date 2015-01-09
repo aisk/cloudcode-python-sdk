@@ -1,10 +1,12 @@
 # coding: utf-8
 
 from werkzeug.wrappers import Request
+from werkzeug.serving import run_simple
 
 import context
 from .authorization import AuthorizationMiddleware
 from .cloudcode import CloudCodeApplication
+from .cloudcode import CloudCodeError
 from .cloudcode import register_cloud_func
 from .cloudcode import register_cloud_hook
 from .cloudcode import user
@@ -24,10 +26,18 @@ def wrap(app):
     return fn
 
 
+cloud_func = register_cloud_func
+cloud_hook = register_cloud_hook
+run = run_simple
+
+
 __all__ = [
     'wrap',
     'user',
     'register_cloud_func',
     'register_cloud_hook',
+    'cloud_func',
+    'cloud_hook',
     'local',
+    'run'
 ]

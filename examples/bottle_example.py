@@ -2,7 +2,6 @@
 
 import bottle
 import cloudcode
-from werkzeug.serving import run_simple
 
 __author__ = 'asaka'
 
@@ -12,12 +11,20 @@ def index():
     return 'Hello LeanCloud!'
 
 
-@cloudcode.register_cloud_func
+@cloudcode.cloud_func
 def add(params):
+    user = cloudcode.user
     return params['x'] + params['y']
+
+
+@cloudcode.cloud_hook('Album', 'before_save')
+def before_album_save(obj):
+    user = cloudcode.user
+    return 'ok'
+
 
 app = bottle.default_app()
 app = cloudcode.wrap(app)
 
 if __name__ == '__main__':
-    run_simple('localhost', 5000, app)
+    cloudcode.run('localhost', 5000, app)

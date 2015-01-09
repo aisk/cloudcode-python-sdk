@@ -23,6 +23,10 @@ logger = logging.getLogger('leancloud.cloudcode.cloudcode')
 user = context.local('user')
 
 
+class CloudCodeError(Exception):
+    pass
+
+
 class CloudCodeApplication(object):
     def __init__(self):
         self.url_map = Map([
@@ -71,7 +75,12 @@ class CloudCodeApplication(object):
             return Response(json.dumps({'result': result}), mimetype='application/json')
         except Exception:
             traceback.print_exc()
-            return Response('internal error', status=500)
+            # TODO: output the error message in debug mode
+            return Response(
+                json.dumps({'code': 141, 'error': 'Cloud Code script had an error.'}),
+                status=500,
+                mimetype='application/json'
+            )
 
 
 _cloud_func_map = {}
@@ -92,13 +101,6 @@ def dispatch_cloud_func(func_name, params):
     logger.info("{} is called!".format(func_name))
 
     return func(params)
-    # if isinstance(result, basestring):
-    #     return Response(result, mimetype='text/plain')
-    # if isinstance(result, dict):
-    #     return Response(json.dumps(result), mimetype='application/json')
-    # if isinstance(result, Response):
-    #     return result
-    # raise TypeError('invalid cloud function result')
 
 
 _cloud_hook_map = {
@@ -110,14 +112,26 @@ _cloud_hook_map = {
 }
 
 
-def register_cloud_hook(class_name, hook_name, func):
+def register_cloud_hook(class_name, hook_name):
+    # hack the hook name
+    hook_name = {
+        'before_save': 'beforeSave',
+        'after_save': 'afterSave',
+        'after_update': 'afterUpdate',
+        'before_delete': 'beforeDelete',
+        'after_delete': 'afterDelete',
+    }.get(hook_name) or hook_name
+
     if hook_name not in _cloud_hook_map:
-        raise RuntimeError('invalid hook name')
+        raise RuntimeError('invalid hook name: {}'.format(hook_name))
 
     if class_name in _cloud_hook_map[hook_name]:
         raise RuntimeError('cloud hook {} on class {} is already registered'.format(hook_name, class_name))
 
-    _cloud_hook_map[hook_name][class_name] = func
+    def new_func(func):
+        _cloud_hook_map[hook_name][class_name] = func
+
+    return new_func
 
 
 def dispatch_cloud_hook(class_name, hook_name, params):
@@ -133,10 +147,3 @@ def dispatch_cloud_hook(class_name, hook_name, params):
         raise NotFound
 
     return func(obj)
-    # if isinstance(result, basestring):
-    #     return Response(result, mimetype='text/plain')
-    # if isinstance(result, dict):
-    #     return Response(json.dumps(result), mimetype='application/json')
-    # if isinstance(result, Response):
-    #     return result
-    # raise TypeError('invalid cloud hook result')

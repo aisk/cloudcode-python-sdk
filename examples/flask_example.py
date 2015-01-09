@@ -1,8 +1,7 @@
 # coding: utf-8
 
-from werkzeug.serving import run_simple
-
 import cloudcode
+from cloudcode import CloudCodeError
 from flask import Flask
 
 
@@ -17,11 +16,19 @@ def index():
     return 'Hello LeanCloud!'
 
 
-@cloudcode.register_cloud_func
+@cloudcode.cloud_func
 def add(params):
+    user = cloudcode.user
     return params['x'] + params['y']
+
+
+@cloudcode.cloud_hook('Album', 'before_save')
+def before_album_save(obj):
+    user = cloudcode.user
+    # raise CloudCodeError to prevent save
+    return 'ok'
 
 
 if __name__ == '__main__':
     wsgi_func = cloudcode.wrap(app.wsgi_app)
-    run_simple('localhost', 5000, wsgi_func)
+    cloudcode.run('localhost', 5000, wsgi_func)

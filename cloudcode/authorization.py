@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os
+import json
 
 from werkzeug.wrappers import Request
 from werkzeug.wrappers import Response
@@ -61,7 +62,7 @@ class _AuthorizationMiddleware(object):
         self.app = app
 
     def __call__(self, environ, start_response):
-        unauth_response = Response('Unauthorized.', status=401, mimetype='application/json')
+        unauth_response = Response(json.dumps({'code': 401, 'error': 'Unauthorized.'}), status=401, mimetype='application/json')
         app_params = environ['_app_params']
         if app_params['id'] is None:
             return unauth_response(environ, start_response)
