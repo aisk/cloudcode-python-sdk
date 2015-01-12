@@ -9,6 +9,7 @@ from .cloudcode import CloudCodeApplication
 from .cloudcode import CloudCodeError
 from .cloudcode import register_cloud_func
 from .cloudcode import register_cloud_hook
+from .cloudcode import register_on_verified
 from .cloudcode import user
 
 __author__ = 'asaka <lan@leancloud.rocks>'
@@ -28,6 +29,7 @@ def wrap(app):
 
 cloud_func = register_cloud_func
 cloud_hook = register_cloud_hook
+on_verified = register_on_verified
 run = run_simple
 
 
@@ -36,8 +38,10 @@ __all__ = [
     'user',
     'register_cloud_func',
     'register_cloud_hook',
+    'register_on_verified',
+    'on_verified',
     'cloud_func',
     'cloud_hook',
     'local',
-    'run'
+    'run',
 ]

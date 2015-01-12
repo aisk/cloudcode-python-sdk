@@ -36,6 +36,8 @@ class CloudCodeApplication(object):
             Rule('/1.1/functions/<func_name>', endpoint='cloud_function'),
             Rule('/1/functions/<class_name>/<hook_name>', endpoint='cloud_hook'),
             Rule('/1.1/functions/<class_name>/<hook_name>', endpoint='cloud_hook'),
+            Rule('/1/onVerified/<verify_type>', endpoint='on_verified'),
+            Rule('/1.1/onVerified/<verify_type>', endpoint='on_verified'),
         ])
 
     def __call__(self, environ, start_response):
@@ -70,8 +72,12 @@ class CloudCodeApplication(object):
         try:
             if endpoint == 'cloud_function':
                 result = dispatch_cloud_func(**values)
-            if endpoint == 'cloud_func':
+            elif endpoint == 'cloud_func':
                 result = dispatch_cloud_hook(**values)
+            elif endpoint == 'on_verified':
+                result = dispatch_on_verified(**values)
+            else:
+                raise ValueError    # impossible
             return Response(json.dumps({'result': result}), mimetype='application/json')
         except Exception:
             traceback.print_exc()
@@ -147,3 +153,26 @@ def dispatch_cloud_hook(class_name, hook_name, params):
         raise NotFound
 
     return func(obj)
+
+
+_on_verified_map = {}
+
+
+def register_on_verified(verify_type):
+    if verify_type not in {'sms', 'email'}:
+        raise RuntimeError('verify_type must be sms or email')
+
+    def new_func(func):
+        if verify_type in _on_verified_map:
+            raise RuntimeError('on verified is already registered')
+        _on_verified_map[verify_type] = func
+    return new_func
+
+
+def dispatch_on_verified(verify_type, user):
+    # TODO: parse user
+    func = _on_verified_map.get(verify_type)
+    if not func:
+        return
+
+    return func(user)
